@@ -1,0 +1,23 @@
+handler	KEYWORD1
+transition_t	KEYWORD1
+StepObj	KEYWORD1
+validate	KEYWORD2
+Step	KEYWORD1
+StepObj	KEYWORD2
+Receptivity	KEYWORD1
+setNextStep	KEYWORD2
+Grafcet	KEYWORD1
+Fork	KEYWORD2	
+fork	KEYWORD2
+Branch	KEYWORD1
+branch	KEYWORD2
+backToInitial	KEYWORD2
+converge	KEYWORD2
+setInitial	KEYWORD2
+receptivity	KEYWORD2
+add	KEYWORD2
+TON	KEYWORD1
+TOFF	KEYWORD1
+StepContinuous	KEYWORD1 
+
+
