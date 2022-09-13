@@ -2,6 +2,7 @@
 
 This is the grafcet made in this example. 
 It is the evolution of a 3 branch. All branch evoluate at the same time.
+It is made to illustrate Step syncronisation
 NOTE: PROGRAMMER HAVE THE RESPONSABILITY TO CONVERGE ALL BRANCH AT THE SAME POINT.
 
 -Branch could contain fork and nested branch, as long as it respect the branch convergeance rule.
@@ -32,19 +33,19 @@ _____________________ ======
 | |_R_|                    |_R_|                 |_R_|
 |   |                        |                     |
 |   |                        |                     |
-| ----- Q3                 ----- Q4                |
-|   |   readChar_c           |   readChar_d        |
+| ----- S1                 ----- Q3              ----- Q4
+|   |   X6==active           |   readChar_d        |   X7==active() && readChar_e
 |   |                        |                     |
-| ____                     ____                    |
-| | 5 |__(print "X5")      | 6 |__(print "X6")     |
-| |_R_|                    |_R_|                   |
+| ____                     ____                  ____
+| | 5 |__(print "X5")      | 6 |__(print "X6")   | 8 |__(print "X8")
+| |_R_|                    |_R_|                 |_R_|
 |   |                        |                     |
 |   |                        |                     |
 | ----- Q5                   |                     |
-|   |   readChar_e           |                     | 
+|   |   X4 activeTime >=30000|                     | 
 | ____                       |                     |
 | | 7 |__(print "X7")        |                     |
-| |_R_|                      |                     |                     |
+| |_R_|                      |                     |
 |   |                        |                     |
 |   |                        |                     |
 |   |                        |                     |
@@ -56,7 +57,7 @@ _____________________ ======
 |                            |
 |                            |
 |                          ____
-|                          | 8 | ___(print "X8")
+|                          | 9 | ___(print "X9")
 |                          |_R_|
 |                            |
 |                            |
@@ -84,20 +85,6 @@ bool readChar(char input){ //function to test condition
 	return false;
 }
 
-//
-
-//initiate all receptivity object, receptivity can only be used once in the grafcet
-//Also using lambdas function for simplicity, but Transition support Bool() expression and 
-//functor with operator bool() overload.
-//Lambdas also support capture.
-Transition Q1( [](){return readChar('a');} );
-Transition Q2( [](){return readChar('b');} );
-Transition Q3( [](){return readChar('c');} );
-Transition Q4( [](){return readChar('d');} );
-Transition Q5( [](){return readChar('e');} );
-ConvergeTransition Q6( [](){return readChar('f');} );
-Transition Q7( [](){return readChar('g');} );
-
 //For convenience, use step rising, the callback will append when the step become active
 //Also using lambdas function for simplicity, but step support function pointer and
 //functor with operator void() overload. 
@@ -110,6 +97,32 @@ StepRising X5( [](){Serial.println("X5");} );
 StepRising X6( [](){Serial.println("X6");} );
 StepRising X7( [](){Serial.println("X7");} );
 StepRising X8( [](){Serial.println("X8");} );
+StepRising X9( [](){Serial.println("X9");} );
+
+//initiate all receptivity object, receptivity can only be used once in the grafcet
+//Also using lambdas function for simplicity, but Transition support Bool() expression and 
+//functor with operator bool() overload.
+//Lambdas also support capture.
+Transition Q1( [](){return readChar('a');} );
+Transition Q2( [](){return readChar('b');} );
+SyncMerory S1(X6);
+Transition Q3( [](){return readChar('d');} );
+//you can use Step.isActive() function to sync with another step,
+//usefull is you and more than one condition
+Transition Q4( [](){return X7.isActive() && readChar('e');} );
+
+Transition Q5( []()
+{
+  if( X4.activeTime() >= 30000 ) {
+    Serial.println("X4 is active >= 30000 ");
+    return true;
+  }
+  return false;
+} );
+ConvergeTransition Q6( [](){return readChar('f');} );
+Transition Q7( [](){return readChar('g');} );
+
+
 
 //create the branch object
 Branch branch1;
@@ -128,26 +141,27 @@ void setup() {
   X1.setTransition(Q2);
   Q2.setNextStep(branch1);
   branch1[0] = X2; //step the first step of the branch
-    X2.setTransition(Q3); //progress trough the branch
-    Q3.setNextStep(X5);
+    X2.setTransition(S1); //progress trough the branch
+    S1.setNextStep(X5); //set Sync memory same as other receptivity
     X5.setTransition(Q5);
     Q5.setNextStep(X7);
   branch1.add(); //add a new branch
   branch1[1] = X3; //step the first step of the branch
-    X3.setTransition(Q4); //progress trough the branch
-    Q4.setNextStep(X6);
+    X3.setTransition(Q3); //progress trough the branch
+    Q3.setNextStep(X6);
   branch1.add();
   branch1[2] = X4;
+  X4.setTransition(Q4);
+  Q4.setNextStep(X8);
   branch1.setConvergeTransition(Q6); //set the transition that converge the branch
     X7.setTransition(branch1.converge()); //converge every last step of every branch
     X6.setTransition(branch1.converge());
-    X4.setTransition(branch1.converge());
-  Q6.setNextStep(X8);
-  X8.setTransition(Q7);
+    X8.setTransition(branch1.converge());
+  Q6.setNextStep(X9);
+  X9.setTransition(Q7);
   Q7.setNextStep(grafcet.backToInitial());
 
 }
-
 void loop() {
   grafcet.handler();
 }

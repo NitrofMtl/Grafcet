@@ -1,18 +1,29 @@
 #include <Grafcet.h>
 
-Grafcet::Grafcet() : activeStep(&initial) {
+
+Grafcet::Grafcet() : initial(Step([](){;})) , activeStep(&initial) {
 }
 
-void Grafcet::setInitial(Receptivity &_receptivity){//remove just keep transition
-	initial.receptivity = &_receptivity;
+void Grafcet::setInitial(Transition& initialReceptivity){//remove just keep transition
+	initial.setTransition(initialReceptivity);
 }
 
 void Grafcet::handler() {
-	if (activeStep->action) activeStep->doAction();
-	if (!activeStep->receptivity) return;
-	if (!activeStep->receptivity->validate()) return;
-	if (activeStep->receptivity->nextStep) { //if remove this, grafcet lock in non complete graf... maybe better
-		activeStep->reset();
-		activeStep = activeStep->receptivity->nextStep;
+	if (!activeStep) {
+		P_ERROR("NO ACTIVE STEP !!!");
+		return;
 	}
+	activeStep = activeStep->handleStep();
 }
+
+Step& Grafcet::backToInitial()
+{ 
+	return initial; 
+}
+
+const bool TRUE()
+{
+	return true;
+}
+
+void WAIT() {}
